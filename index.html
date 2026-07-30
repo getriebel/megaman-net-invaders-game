@@ -1,0 +1,953 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <title>MegaMan Net Invaders</title>
+  <link rel="icon" type="image/png" href="img/favicon.png" />
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    @font-face {
+      font-family: 'MMBNFont';
+      src: url('misc/fonts/MMBNFont.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'MMBNFontThin';
+      src: url('misc/fonts/MMBNFontThin.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    @font-face {
+      font-family: 'MMBNFontSerif';
+      src: url('misc/fonts/MMBNFontSerif.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    .font-mmbn {
+      font-family: 'MMBNFont', 'Courier New', monospace;
+    }
+
+    .font-mmbn-thin {
+      font-family: 'MMBNFontThin', 'Courier New', monospace;
+    }
+
+    .font-mmbn-serif {
+      font-family: 'MMBNFontSerif', 'Georgia', serif;
+    }
+
+    :root {
+      --retro-red: #d32f2f;
+      --retro-blue: #101c33;
+      --retro-panel: #18253f;
+    }
+
+    * {
+      box-sizing: border-box;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    html, body {
+      position: fixed;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      margin: 0;
+      padding: 0;
+      background-color: #0a0e17;
+      color: #fff;
+      font-family: 'MMBNFontThin', system-ui, sans-serif;
+      overscroll-behavior: none;
+    }
+
+    .app-viewport {
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      width: 100vw;
+      height: 100vh;
+      padding: 6px;
+      overflow: hidden;
+    }
+
+    /* Retro MMBN Panel Card */
+    .retro-card {
+      background: var(--retro-panel);
+      border: 2px solid #2a3c60;
+      box-shadow: inset 0 0 0 1px #0a1120, 0 4px 10px rgba(0, 0, 0, 0.5);
+    }
+
+    /* Classic GBA MMBN Red Button */
+    .retro-btn-red {
+      font-family: 'MMBNFont', sans-serif;
+      background: linear-gradient(180deg, #e53935 0%, #b71c1c 100%);
+      border: 2px solid #5a0000;
+      color: #ffffff;
+      text-shadow: 1px 1px 0 #000;
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), inset 0 -1px 0 rgba(0, 0, 0, 0.4), 0 2px 5px rgba(0,0,0,0.4);
+      transition: all 0.1s ease;
+      cursor: pointer;
+    }
+
+    .retro-btn-red:active, .retro-btn-red.pressed {
+      transform: translateY(1px);
+      background: #9a0000;
+      box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7);
+    }
+
+    /* HUD Bar Styling */
+    .hud-bar {
+      background: linear-gradient(180deg, #182848 0%, #0b1326 100%);
+      border: 2px solid #2a3c60;
+      border-bottom: none;
+      border-radius: 8px 8px 0 0;
+    }
+
+    /* Canvas Responsive Container */
+    #canvas-wrapper {
+      position: relative;
+      width: 100%;
+      max-width: 850px;
+      margin: 0 auto;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      flex-shrink: 1;
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      border: none;
+      border-radius: 0 0 8px 8px;
+      background-color: #0f172a;
+    }
+
+    /* Navi Selection Overlay */
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(10, 14, 23, 0.97);
+      z-index: 30;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      overflow: hidden;
+      border: 2px solid #2a3c60;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .touch-controls {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      max-width: 850px;
+      margin-top: 6px;
+      flex-shrink: 0;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-viewport">
+
+    <!-- Header Title & Subtitle -->
+    <header class="w-full max-w-4xl text-center py-1 flex flex-col justify-center items-center flex-shrink-0">
+      <div class="flex items-center justify-center gap-2 sm:gap-3">
+        <img src="img/favicon.png" alt="Favicon" class="h-8 sm:h-12 w-auto object-contain" onerror="this.style.display='none';" />
+        <h1 class="font-mmbn-serif text-3xl sm:text-5xl text-white uppercase tracking-widest font-bold drop-shadow">MEGAMAN NET INVADERS</h1>
+      </div>
+      <p class="font-mmbn-thin text-xs sm:text-sm text-slate-300">An MMBN-inspired lane shooter fangame</p>
+    </header>
+
+    <!-- Main Game Frame -->
+    <main class="w-full max-w-4xl flex-1 flex flex-col items-center justify-center relative min-h-0">
+      
+      <!-- Canvas Wrapper with HUD and Overlay -->
+      <div id="canvas-wrapper">
+        
+        <!-- Retro Status Bar ABOVE the Battle Grid -->
+        <div id="hud-bar" class="hud-bar w-full px-3 py-1 flex justify-between items-center text-[10px] sm:text-xs text-white font-mmbn z-10">
+          <div class="flex items-center gap-1.5">
+            <span class="text-white">HP:</span>
+            <span id="hud-hp-val" class="text-white font-bold">100/100</span>
+            <div class="w-16 sm:w-20 h-2 bg-slate-900 border border-slate-700 rounded-sm overflow-hidden hidden xs:block">
+              <div id="hud-hp-bar" class="h-full bg-emerald-500 w-full"></div>
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            <div><span class="text-white">WAVE:</span> <span id="hud-wave-val" class="text-white">1</span></div>
+            <div><span class="text-white">KILLS:</span> <span id="hud-kills-val" class="text-white">0/8</span></div>
+          </div>
+        </div>
+
+        <!-- Zero-Scroll Carousel NetNavi Selection Screen -->
+        <div id="selection-screen" class="overlay flex flex-col justify-between items-center p-2 overflow-hidden">
+          <h2 class="text-xs sm:text-sm font-mmbn text-white uppercase tracking-wide my-0.5">
+            Choose your NetNavi
+          </h2>
+          
+          <!-- Character Vertical Selection Display -->
+          <div class="w-full max-w-md flex flex-col items-center justify-center my-auto px-1">
+            <!-- Non-pressable Top Indicator Arrow -->
+            <div class="text-xs text-red-500/80 pointer-events-none select-none font-mmbn mb-1 animate-pulse">▲</div>
+
+            <!-- Dynamic Active Navi Display Card -->
+            <div id="active-navi-card" class="retro-card w-full rounded-xl p-2 flex flex-col items-center text-center transition-all">
+              <!-- Rendered dynamically by renderNaviSelection() -->
+            </div>
+
+            <!-- Non-pressable Bottom Indicator Arrow -->
+            <div class="text-xs text-red-500/80 pointer-events-none select-none font-mmbn mt-1 animate-pulse">▼</div>
+          </div>
+
+          <button id="btn-jack-in" type="button" class="retro-btn-red w-full max-w-xs py-1.5 sm:py-2 rounded-xl font-mmbn text-xs sm:text-sm text-white uppercase tracking-widest active:scale-95 z-10 mt-1" onclick="startGame()">
+            Jack In
+          </button>
+        </div>
+
+        <!-- Main Game Canvas -->
+        <canvas id="gameCanvas" width="800" height="400"></canvas>
+      </div>
+
+      <!-- Mobile Touch Control Panel (Vertical Stack Centered) -->
+      <div class="touch-controls px-1">
+        <div class="retro-card p-1.5 rounded-xl flex flex-col items-center gap-1.5 w-28 sm:w-36">
+          <button id="btn-up" type="button" class="retro-btn-red w-full py-2 rounded-lg text-xs font-mmbn flex justify-center items-center">
+            ▲ UP
+          </button>
+          <button id="btn-down" type="button" class="retro-btn-red w-full py-2 rounded-lg text-xs font-mmbn flex justify-center items-center">
+            ▼ DOWN
+          </button>
+        </div>
+      </div>
+
+      <!-- Control Instructions Footer -->
+      <div class="w-full text-center mt-1 text-[10px] text-slate-400 font-mmbn-thin flex flex-wrap justify-center gap-x-3">
+        <span>⌨️ <b>Arrows / W,S</b>: Move / Select</span>
+        <span>📱 <b>Swipe Up/Down</b>: Move / Select</span>
+      </div>
+    </main>
+
+    <footer class="text-[9px] text-slate-500 py-1 text-center font-mmbn-thin flex-shrink-0">
+    </footer>
+  </div>
+
+  <script>
+  // Embedded NetNavi Data
+  const NAVI_DATA_EMBEDDED = {
+    "navis": [
+      {
+        "id": "megaman",
+        "name": "MegaMan.EXE",
+        "archetype": "Allrounder",
+        "stats": { "max_hp": 100, "base_damage": 15, "move_cooldown": 120, "shot_cooldown": 300, "projectile_speed": 12 },
+        "sprites": {
+          "idle": "img/netnavi/megaman.png",
+          "shoot": "img/netnavi/megaman_shoot.png",
+          "hurt": "img/netnavi/megaman_hurt.png",
+          "portrait": "img/netnavi/megaman_portrait.png"
+        }
+      },
+      {
+        "id": "protoman",
+        "name": "ProtoMan.EXE",
+        "archetype": "Sniper",
+        "stats": { "max_hp": 80, "base_damage": 30, "move_cooldown": 90, "shot_cooldown": 480, "projectile_speed": 18 },
+        "sprites": {
+          "idle": "img/netnavi/protoman.png",
+          "shoot": "img/netnavi/protoman_shoot.png",
+          "hurt": "img/netnavi/protoman_hurt.png",
+          "portrait": "img/netnavi/protoman_portrait.png"
+        }
+      },
+       {
+        "id": "roll",
+        "name": "Roll.EXE",
+        "archetype": "Medic",
+        "stats": { "max_hp": 150, "base_damage": 9, "move_cooldown": 75, "shot_cooldown": 300, "projectile_speed": 4 },
+        "sprites": {
+          "idle": "img/netnavi/roll.png",
+          "shoot": "img/netnavi/roll_shoot.png",
+          "hurt": "img/netnavi/roll_hurt.png",
+          "portrait": "img/netnavi/roll_portrait.png"
+        }
+      },
+      {
+        "id": "gutsman",
+        "name": "GutsMan.EXE",
+        "archetype": "Tank",
+        "stats": { "max_hp": 180, "base_damage": 45, "move_cooldown": 180, "shot_cooldown": 650, "projectile_speed": 8 },
+        "sprites": {
+          "idle": "img/netnavi/gutsman.png",
+          "shoot": "img/netnavi/gutsman_shoot.png",
+          "hurt": "img/netnavi/gutsman_hurt.png",
+          "portrait": "img/netnavi/gutsman_portrait.png"
+        }
+      },
+      {
+        "id": "numberman",
+        "name": "NumberMan.EXE",
+        "archetype": "Gatling",
+        "stats": { "max_hp": 90, "base_damage": 8, "move_cooldown": 130, "shot_cooldown": 120, "projectile_speed": 7 },
+        "sprites": {
+          "idle": "img/netnavi/numberman.png",
+          "shoot": "img/netnavi/numberman_shoot.png",
+          "hurt": "img/netnavi/numberman_hurt.png",
+          "portrait": "img/netnavi/numberman_portrait.png"
+        }
+      }
+    ]
+  };
+
+  // Prevent default scroll/pull-to-refresh
+  document.addEventListener('touchmove', function(e) {
+    e.preventDefault();
+  }, { passive: false });
+
+  const canvas = document.getElementById('gameCanvas');
+  const ctx = canvas.getContext('2d');
+
+  // REVISED GRID SETUP (3 Rows [Y-axis] x 6 Columns [X-axis])
+  const ROWS = 3;
+  const COLS = 6;
+  const CELL_W = canvas.width / COLS;
+  const CELL_H = canvas.height / ROWS;
+
+  // Wave System State
+  let currentWave = 1;
+  let enemiesDefeatedInWave = 0;
+  let enemiesPerWave = 8;
+
+  // Game State
+  let isGameOver = false;
+  let gameStarted = false;
+
+  // Cache & Visual Effects
+  const imageCache = {};
+  let explosions = [];
+  let playerHurtTimer = 0;
+
+  function getLoadedImage(src) {
+    if (imageCache[src]) return imageCache[src];
+    const img = new Image();
+    img.src = src;
+    imageCache[src] = img;
+    return img;
+  }
+
+  const explosionSprite = getLoadedImage("img/virus/explosion.png");
+  const shotSprite = getLoadedImage("img/netnavi/shot.png");
+
+  // Enemy Database
+  const enemyDatabase = [
+{
+    "id": "mettaur",
+    "name": "Mettaur",
+    "basePath": "img/virus/Mettaur",
+    "ext": ".png",
+    "minWave": 1,
+    "spawnWeight": 100,
+    "baseHp": 30,
+    "baseSpeed": 1400,
+    "baseDamage": 10
+  },
+  {
+    "id": "canodumb",
+    "name": "Canodumb",
+    "basePath": "img/virus/Canodumb",
+    "ext": ".png",
+    "minWave": 2,
+    "spawnWeight": 80,
+    "baseHp": 50,
+    "baseSpeed": 2000,
+    "baseDamage": 15
+  },
+  {
+    "id": "ratty",
+    "name": "Ratty",
+    "basePath": "img/virus/Ratty",
+    "ext": ".png",
+    "minWave": 3,
+    "spawnWeight": 65,
+    "baseHp": 20,
+    "baseSpeed": 900,
+    "baseDamage": 8
+  },
+  {
+    "id": "fishy",
+    "name": "Fishy",
+    "basePath": "img/virus/Fishy",
+    "ext": ".png",
+    "minWave": 4,
+    "spawnWeight": 50,
+    "baseHp": 25,
+    "baseSpeed": 500,
+    "baseDamage": 20
+  },
+  {
+    "id": "swordy",
+    "name": "Swordy",
+    "basePath": "img/virus/Swordy",
+    "ext": ".png",
+    "minWave": 5,
+    "spawnWeight": 35,
+    "baseHp": 80,
+    "baseSpeed": 1100,
+    "baseDamage": 25
+  },
+  {
+    "id": "beetank",
+    "name": "Beetank",
+    "basePath": "img/virus/Beetank",
+    "ext": ".png",
+    "minWave": 6,
+    "spawnWeight": 20,
+    "baseHp": 150,
+    "baseSpeed": 2400,
+    "baseDamage": 35
+  }
+];
+
+  class Player {
+    constructor() {
+      this.r = 1; // Middle row in 3-row grid
+      this.c = 0;
+      this.width = 44;
+      this.height = 44;
+      
+      this.hp = 100;
+      this.maxHp = 100;
+      this.baseDamage = 15;
+      this.moveCooldown = 120;
+      this.shotCooldown = 300;
+      this.projectileSpeed = 12;
+
+      this.lastMoveTime = 0;
+      this.lastShotTime = 0;
+      this.shootStateTimer = 0;
+
+      this.sprites = { idle: null, shoot: null, hurt: null };
+      this.activeSprite = null;
+    }
+
+    init(naviData) {
+      this.maxHp = naviData.stats.max_hp;
+      this.hp = this.maxHp;
+      this.baseDamage = naviData.stats.base_damage;
+      this.moveCooldown = naviData.stats.move_cooldown;
+      this.shotCooldown = naviData.stats.shot_cooldown;
+      this.projectileSpeed = naviData.stats.projectile_speed;
+
+      this.sprites.idle = getLoadedImage(naviData.sprites.idle);
+      this.sprites.shoot = getLoadedImage(naviData.sprites.shoot);
+      this.sprites.hurt = getLoadedImage(naviData.sprites.hurt);
+      this.activeSprite = this.sprites.idle;
+    }
+
+    moveUp(now) {
+      if (playerHurtTimer > 0) return; // Cannot move while hurt
+      if (now - this.lastMoveTime >= this.moveCooldown && this.r > 0) {
+        this.r--;
+        this.lastMoveTime = now;
+      }
+    }
+
+    moveDown(now) {
+      if (playerHurtTimer > 0) return; // Cannot move while hurt
+      if (now - this.lastMoveTime >= this.moveCooldown && this.r < ROWS - 1) {
+        this.r++;
+        this.lastMoveTime = now;
+      }
+    }
+
+    canShoot(now) {
+      if (playerHurtTimer > 0) return false; // Cannot shoot while hurt
+      return (now - this.lastShotTime >= this.shotCooldown);
+    }
+
+    registerShoot(now) {
+      this.lastShotTime = now;
+      this.shootStateTimer = now + 150;
+    }
+
+    updateSprite(now) {
+      if (playerHurtTimer > 0) {
+        this.activeSprite = this.sprites.hurt;
+      } else if (now < this.shootStateTimer) {
+        this.activeSprite = this.sprites.shoot;
+      } else {
+        this.activeSprite = this.sprites.idle;
+      }
+    }
+  }
+
+  const player = new Player();
+  let selectedNaviIndex = 0;
+
+  let bullets = [];
+  let enemies = [];
+  let spawnInterval = null;
+
+  function prevNavi() {
+    selectedNaviIndex = (selectedNaviIndex - 1 + NAVI_DATA_EMBEDDED.navis.length) % NAVI_DATA_EMBEDDED.navis.length;
+    renderNaviSelection();
+  }
+
+  function nextNavi() {
+    selectedNaviIndex = (selectedNaviIndex + 1) % NAVI_DATA_EMBEDDED.navis.length;
+    renderNaviSelection();
+  }
+
+  function renderNaviSelection() {
+    const card = document.getElementById('active-navi-card');
+    const navi = NAVI_DATA_EMBEDDED.navis[selectedNaviIndex];
+
+    if (!card) return;
+
+    card.innerHTML = `
+      <div class="flex items-center gap-2 mb-1">
+        <img src="${navi.sprites.portrait}" alt="${navi.name}" class="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded bg-slate-900 border border-slate-700 flex-shrink-0" onerror="this.onerror=null; this.src='https://placehold.co/40x40/101c33/ffffff?text=Navi';" />
+        <div class="text-left">
+          <div class="text-[11px] sm:text-xs font-mmbn uppercase tracking-wide leading-tight text-white">${navi.name}</div>
+          <div class="text-[9px] sm:text-[10px] text-slate-300 font-mmbn-thin bg-slate-900/90 px-1.5 py-0.5 rounded border border-slate-700 inline-block">${navi.archetype}</div>
+        </div>
+      </div>
+      
+      <div class="grid grid-cols-2 gap-x-3 gap-y-0.5 w-full text-[9px] sm:text-[10px] font-mmbn-thin text-slate-200 bg-slate-900/90 p-1.5 rounded-lg border border-slate-800">
+        <div class="text-left">HP: <span class="font-mmbn-thin text-white">${navi.stats.max_hp}</span></div>
+        <div class="text-left">DMG: <span class="font-mmbn-thin text-white">${navi.stats.base_damage}</span></div>
+        <div class="text-left">Move: <span class="font-mmbn-thin text-white">${navi.stats.move_cooldown}ms</span></div>
+        <div class="text-left">Shot: <span class="font-mmbn-thin text-white">${navi.stats.shot_cooldown}ms</span></div>
+      </div>
+    `;
+  }
+
+  function startGame() {
+    const chosenNavi = NAVI_DATA_EMBEDDED.navis[selectedNaviIndex];
+    player.init(chosenNavi);
+
+    const overlay = document.getElementById('selection-screen');
+    if (overlay) overlay.classList.add('hidden');
+    gameStarted = true;
+    restartGame();
+  }
+
+  // Keyboard Input Handling (Controls Navi selection when not started)
+  const keys = {};
+  window.addEventListener('keydown', (e) => {
+    if (["ArrowUp", "ArrowDown"].includes(e.key)) e.preventDefault();
+    if (isGameOver) return;
+    
+    if (!gameStarted) {
+      if (e.key === 'ArrowUp' || e.key === 'w' || e.key === 'W') prevNavi();
+      if (e.key === 'ArrowDown' || e.key === 's' || e.key === 'S') nextNavi();
+      return;
+    }
+    
+    keys[e.key] = true;
+  });
+
+  window.addEventListener('keyup', (e) => { keys[e.key] = false; });
+
+  function handleMovementInput() {
+    if (!gameStarted || isGameOver) return;
+    const now = Date.now();
+    if (keys['ArrowUp'] || keys['w'] || keys['W']) player.moveUp(now);
+    if (keys['ArrowDown'] || keys['s'] || keys['S']) player.moveDown(now);
+  }
+
+  // Touch & Swipe Event Handling
+  let touchStartY = 0;
+  canvas.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 1) {
+      touchStartY = e.touches[0].clientY;
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('touchend', (e) => {
+    if (isGameOver) {
+      restartGame();
+      return;
+    }
+    if (e.changedTouches.length === 1) {
+      const diffY = e.changedTouches[0].clientY - touchStartY;
+      const now = Date.now();
+      if (diffY < -30) {
+        if (!gameStarted) prevNavi();
+        else player.moveUp(now);
+      } else if (diffY > 30) {
+        if (!gameStarted) nextNavi();
+        else player.moveDown(now);
+      }
+    }
+  }, { passive: true });
+
+  canvas.addEventListener('click', () => {
+    if (isGameOver) {
+      restartGame();
+    }
+  });
+
+  // Touch Movement / Navigation Buttons
+  const btnUp = document.getElementById('btn-up');
+  const btnDown = document.getElementById('btn-down');
+  if (btnUp) {
+    btnUp.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!gameStarted) {
+        prevNavi();
+      } else if (!isGameOver) {
+        player.moveUp(Date.now());
+      }
+    });
+  }
+  if (btnDown) {
+    btnDown.addEventListener('pointerdown', (e) => {
+      e.preventDefault();
+      if (!gameStarted) {
+        nextNavi();
+      } else if (!isGameOver) {
+        player.moveDown(Date.now());
+      }
+    });
+  }
+
+  // Navi Carousel Selection Touch/Swipe Support
+  const overlayElem = document.getElementById('selection-screen');
+  let overlayTouchStartY = 0;
+  if (overlayElem) {
+    overlayElem.addEventListener('touchstart', (e) => {
+      if (e.target.closest('button')) return;
+      if (e.touches.length === 1) overlayTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    overlayElem.addEventListener('touchend', (e) => {
+      if (e.target.closest('button')) return;
+      if (e.changedTouches.length === 1) {
+        const diffY = e.changedTouches[0].clientY - overlayTouchStartY;
+        if (diffY < -30) prevNavi();
+        else if (diffY > 30) nextNavi();
+      }
+    }, { passive: true });
+  }
+
+  function spawnEnemy() {
+    if (!gameStarted || isGameOver) return;
+
+    const available = enemyDatabase.filter(e => e.minWave <= currentWave);
+    if (available.length === 0) return;
+
+    let totalWeight = available.reduce((sum, e) => sum + e.spawnWeight, 0);
+    let random = Math.random() * totalWeight;
+    let proto = available[0];
+
+    for (let e of available) {
+      if (random < e.spawnWeight) {
+        proto = e;
+        break;
+      }
+      random -= e.spawnWeight;
+    }
+
+    // Spawn across 3 rows (0, 1, 2)
+    const allowedRows = [0, 1, 2];
+    const row = allowedRows[Math.floor(Math.random() * allowedRows.length)];
+
+    const waveMultiplier = currentWave - 1;
+    const scaledHp = Math.round(proto.baseHp * (1 + waveMultiplier * 0.25));
+    const scaledDamage = Math.round(proto.baseDamage * (1 + waveMultiplier * 0.15));
+    const stepInterval = Math.max(400, proto.baseSpeed - (waveMultiplier * 100));
+
+    let spriteNum = Math.floor((currentWave - 1) / 5) + 1;
+    if (spriteNum > 3) spriteNum = 3;
+
+    const spritePath = `${proto.basePath}${spriteNum}${proto.ext}`;
+    const sprite = getLoadedImage(spritePath);
+
+    enemies.push({
+      row: row,
+      col: COLS - 1, // Spawns on the 6th column (index 5)
+      stepInterval: stepInterval,
+      lastStepTime: Date.now(),
+      hp: scaledHp,
+      maxHp: scaledHp,
+      damage: scaledDamage,
+      sprite: sprite,
+      width: 40,
+      height: 40,
+      hitFlashTimer: 0
+    });
+  }
+
+  function updateWaveProgress() {
+    if (enemiesDefeatedInWave >= enemiesPerWave) {
+      currentWave++;
+      enemiesDefeatedInWave = 0;
+      enemiesPerWave = 8 + (currentWave - 1) * 3;
+      
+      clearInterval(spawnInterval);
+      const newRate = Math.max(600, 1800 - (currentWave - 1) * 150);
+      spawnInterval = setInterval(spawnEnemy, newRate);
+    }
+  }
+
+  function restartGame() {
+    isGameOver = false;
+    player.hp = player.maxHp;
+    player.r = 1; // Center lane on 3-row grid
+    currentWave = 1;
+    enemiesDefeatedInWave = 0;
+    enemiesPerWave = 8;
+    bullets = [];
+    enemies = [];
+    explosions = [];
+    playerHurtTimer = 0;
+
+    if (spawnInterval) clearInterval(spawnInterval);
+    spawnInterval = setInterval(spawnEnemy, 1800);
+  }
+
+  function updateHUD() {
+    if (!gameStarted) return;
+    const hpVal = document.getElementById('hud-hp-val');
+    const waveVal = document.getElementById('hud-wave-val');
+    const killsVal = document.getElementById('hud-kills-val');
+
+    if (hpVal) hpVal.innerText = `${player.hp}/${player.maxHp}`;
+    if (waveVal) waveVal.innerText = currentWave;
+    if (killsVal) killsVal.innerText = `${enemiesDefeatedInWave}/${enemiesPerWave}`;
+
+    const hpBar = document.getElementById('hud-hp-bar');
+    if (hpBar) {
+      const ratio = Math.max(0, player.hp / player.maxHp);
+      hpBar.style.width = `${ratio * 100}%`;
+      hpBar.style.backgroundColor = ratio > 0.3 ? '#10b981' : '#ef4444';
+    }
+  }
+
+  function update() {
+    if (!gameStarted || isGameOver) return;
+
+    const now = Date.now();
+    handleMovementInput();
+
+    // Auto Shot
+    if (player.canShoot(now)) {
+      bullets.push({
+        x: (player.c + 0.8) * CELL_W,
+        y: (player.r + 0.5) * CELL_H,
+        speed: player.projectileSpeed,
+        damage: player.baseDamage
+      });
+      player.registerShoot(now);
+    }
+
+    player.updateSprite(now);
+
+    if (playerHurtTimer > 0) playerHurtTimer--;
+
+    explosions = explosions.filter(exp => {
+      exp.timer--;
+      return exp.timer > 0;
+    });
+
+    // Bullets movement & collision
+    for (let i = bullets.length - 1; i >= 0; i--) {
+      let b = bullets[i];
+      b.x += b.speed;
+
+      let bulletRow = Math.floor(b.y / CELL_H);
+      let bulletCol = Math.floor(b.x / CELL_W);
+
+      let hit = false;
+      for (let j = enemies.length - 1; j >= 0; j--) {
+        let e = enemies[j];
+
+        if (e.row === bulletRow && e.col === bulletCol) {
+          e.hp -= b.damage;
+          hit = true;
+          e.hitFlashTimer = 4;
+
+          if (e.hp <= 0) {
+            // Spawn explosion sprite before virus vanishes
+            explosions.push({
+              x: (e.col + 0.5) * CELL_W,
+              y: (e.row + 0.5) * CELL_H,
+              timer: 15
+            });
+
+            enemies.splice(j, 1);
+            enemiesDefeatedInWave++;
+            updateWaveProgress();
+          }
+          break;
+        }
+      }
+
+      if (hit || b.x > canvas.width) {
+        bullets.splice(i, 1);
+      }
+    }
+
+    // Enemy movement & player damage
+    for (let i = enemies.length - 1; i >= 0; i--) {
+      let e = enemies[i];
+
+      if (e.hitFlashTimer > 0) e.hitFlashTimer--;
+
+      if (now - e.lastStepTime >= e.stepInterval) {
+        e.col--;
+        e.lastStepTime = now;
+
+        if (e.col <= 0) {
+          player.hp = Math.max(0, player.hp - e.damage);
+          playerHurtTimer = 18; // Reduced hurt duration by ~50%
+          explosions.push({
+            x: 0 * CELL_W + CELL_W / 2,
+            y: e.row * CELL_H + CELL_H / 2,
+            timer: 30
+          });
+
+          enemies.splice(i, 1);
+          enemiesDefeatedInWave++;
+
+          if (player.hp <= 0) {
+            isGameOver = true;
+            break;
+          }
+
+          updateWaveProgress();
+        }
+      }
+    }
+
+    updateHUD();
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    // 1. Grid (Red outlines for player's 1st column, Blue outlines for remaining enemy columns)
+    for (let r = 0; r < ROWS; r++) {
+      for (let c = 0; c < COLS; c++) {
+        ctx.strokeStyle = (c === 0) ? '#ef4444' : '#3b82f6';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(c * CELL_W, r * CELL_H, CELL_W, CELL_H);
+      }
+    }
+
+    if (!gameStarted) return;
+
+    // 2. Player Rendering
+    const px = player.c * CELL_W + CELL_W / 2;
+    const py = player.r * CELL_H + CELL_H / 2;
+    const currentSprite = player.activeSprite;
+
+    if (currentSprite && currentSprite.complete && currentSprite.naturalWidth !== 0) {
+      ctx.drawImage(currentSprite, px - player.width / 2, py - player.height / 2, player.width, player.height);
+    } else {
+      ctx.fillStyle = playerHurtTimer > 0 ? '#ef4444' : '#ffffff';
+      ctx.beginPath();
+      ctx.arc(px, py, 18, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // 3. Enemies Rendering
+    enemies.forEach(e => {
+      const ex = e.col * CELL_W + CELL_W / 2;
+      const ey = e.row * CELL_H + CELL_H / 2;
+
+      ctx.save();
+      if (e.hitFlashTimer > 0) ctx.filter = 'brightness(10)';
+
+      if (e.sprite.complete && e.sprite.naturalWidth !== 0) {
+        ctx.drawImage(e.sprite, ex - e.width / 2, ey - e.height / 2, e.width, e.height);
+      } else {
+        ctx.fillStyle = '#ff2e63';
+        ctx.fillRect(ex - e.width / 2, ey - e.height / 2, e.width, e.height);
+      }
+      ctx.restore();
+
+      // Enemy HP Bar
+      const barW = e.width;
+      const barH = 4;
+      const barX = ex - barW / 2;
+      const barY = ey - e.height / 2 - 6;
+
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+      ctx.fillRect(barX, barY, barW, barH);
+      const hpRatio = Math.max(0, e.hp / e.maxHp);
+      ctx.fillStyle = hpRatio > 0.4 ? '#10b981' : '#ef4444';
+      ctx.fillRect(barX, barY, barW * hpRatio, barH);
+    });
+
+    // 4. Explosions
+    explosions.forEach(exp => {
+      if (explosionSprite.complete && explosionSprite.naturalWidth !== 0) {
+        ctx.drawImage(explosionSprite, exp.x - 24, exp.y - 24, 48, 48);
+      } else {
+        ctx.fillStyle = '#f97316';
+        ctx.beginPath();
+        ctx.arc(exp.x, exp.y, 20, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // 5. Bullets (Rendered using img/netnavi/shot.png)
+    bullets.forEach(b => {
+      if (shotSprite.complete && shotSprite.naturalWidth !== 0) {
+        ctx.drawImage(shotSprite, b.x - 12, b.y - 12, 24, 24);
+      } else {
+        ctx.fillStyle = '#facc15';
+        ctx.beginPath();
+        ctx.arc(b.x, b.y, b.radius || 6, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+
+    // 6. Game Over Screen
+    if (isGameOver) {
+      ctx.fillStyle = 'rgba(10, 14, 23, 0.92)';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '16px "MMBNFont", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Deleted', canvas.width / 2, canvas.height / 2 - 10);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.font = '11px "MMBNFontThin", monospace';
+      ctx.fillText('Click here to try again', canvas.width / 2, canvas.height / 2 + 25);
+      ctx.textAlign = 'left';
+    }
+  }
+
+  function gameLoop() {
+    update();
+    draw();
+    requestAnimationFrame(gameLoop);
+  }
+
+  // Initialization
+  renderNaviSelection();
+  gameLoop();
+  </script>
+</body>
+</html>
