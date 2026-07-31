@@ -199,27 +199,28 @@
 
         <!-- Zero-Scroll Carousel NetNavi Selection Screen -->
         <div id="selection-screen" class="overlay flex flex-col justify-between items-center p-2 overflow-hidden">
-          <h2 class="text-xs sm:text-sm font-mmbn text-white uppercase tracking-wide my-0.5">
-            Choose your NetNavi
-          </h2>
+          <div class="text-center">
+            <h2 class="text-xs sm:text-sm font-mmbn text-white uppercase tracking-wide my-0.5">
+              Choose your NetNavi
+            </h2>
+            <p class="font-mmbn-thin text-[10px] sm:text-xs text-slate-300 my-0.5">
+              click/swipe up or down to select NetNavi and click/tap to confirm
+            </p>
+          </div>
           
           <!-- Character Vertical Selection Display -->
           <div class="w-full max-w-md flex flex-col items-center justify-center my-auto px-1">
             <!-- Non-pressable Top Indicator Arrow -->
             <div class="text-xs text-red-500/80 pointer-events-none select-none font-mmbn mb-1 animate-pulse">▲</div>
 
-            <!-- Dynamic Active Navi Display Card -->
-            <div id="active-navi-card" class="retro-card w-full rounded-xl p-2 flex flex-col items-center text-center transition-all">
+            <!-- Dynamic Active Navi Display Card (Clickable to start game) -->
+            <div id="active-navi-card" class="retro-card w-full rounded-xl p-2 flex flex-col items-center text-center transition-all cursor-pointer active:scale-95 z-10" onclick="startGame()">
               <!-- Rendered dynamically by renderNaviSelection() -->
             </div>
 
             <!-- Non-pressable Bottom Indicator Arrow -->
             <div class="text-xs text-red-500/80 pointer-events-none select-none font-mmbn mt-1 animate-pulse">▼</div>
           </div>
-
-          <button id="btn-jack-in" type="button" class="retro-btn-red w-full max-w-xs py-1.5 sm:py-2 rounded-xl font-mmbn text-xs sm:text-sm text-white uppercase tracking-widest active:scale-95 z-10 mt-1" onclick="startGame()">
-            Jack In
-          </button>
         </div>
 
         <!-- Main Game Canvas -->
@@ -357,7 +358,7 @@
 
   // Enemy Database
   const enemyDatabase = [
-{
+  {
     "id": "mettaur",
     "name": "Mettaur",
     "basePath": "img/virus/Mettaur",
@@ -634,12 +635,10 @@
   let overlayTouchStartY = 0;
   if (overlayElem) {
     overlayElem.addEventListener('touchstart', (e) => {
-      if (e.target.closest('button')) return;
       if (e.touches.length === 1) overlayTouchStartY = e.touches[0].clientY;
     }, { passive: true });
 
     overlayElem.addEventListener('touchend', (e) => {
-      if (e.target.closest('button')) return;
       if (e.changedTouches.length === 1) {
         const diffY = e.changedTouches[0].clientY - overlayTouchStartY;
         if (diffY < -30) prevNavi();
